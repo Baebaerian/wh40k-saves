@@ -29,8 +29,14 @@
 <header>
   <h1>WH40K Board Saves</h1>
   <div class="filters">
-    <select id="fPairing"><option value="">All disposition pairings</option></select>
-    <select id="fLayout"><option value="">All layouts</option></select>
+    <select id="fDispA"><option value="">All (side A)</option></select>
+    <select id="fDispB"><option value="">All (side B)</option></select>
+    <select id="fLayout">
+      <option value="">All layouts</option>
+      <option value="A">Layout A</option>
+      <option value="B">Layout B</option>
+      <option value="C">Layout C</option>
+    </select>
   </div>
 </header>
 <div id="status">Loading saves…</div>
@@ -45,26 +51,41 @@
 <script>
   let SAVES = [];
 
-  function pairingKey(s) { return s.dispAName + ' vs ' + s.dispBName; }
+  // Fixed list of the 5 disposition types — matches board-geometry.js's forceDispositions
+  // in the wh40k-simulator app, kept in sync by hand since this site has no access to that code.
+  const DISPOSITIONS = ['Take and Hold', 'Disruption', 'Purge the Foe', 'Priority Assets', 'Reconnaissance'];
+
+  function dispName(s, side) {
+    return s['disp' + side + 'Name'] || s['disp' + side] || 'Unknown';
+  }
 
   function populateFilters() {
-    const pairings = [...new Set(SAVES.map(pairingKey))].sort();
-    const layouts = [...new Set(SAVES.map(s => s.layoutLetter))].sort();
-    const fPairing = document.getElementById('fPairing');
-    const fLayout = document.getElementById('fLayout');
-    for (const p of pairings) {
-      const o = document.createElement('option'); o.value = p; o.textContent = p; fPairing.appendChild(o);
-    }
-    for (const l of layouts) {
-      const o = document.createElement('option'); o.value = l; o.textContent = 'Layout ' + l; fLayout.appendChild(o);
+    const fDispA = document.getElementById('fDispA');
+    const fDispB = document.getElementById('fDispB');
+    for (const d of DISPOSITIONS) {
+      for (const sel of [fDispA, fDispB]) {
+        const o = document.createElement('option'); o.value = d; o.textContent = d; sel.appendChild(o);
+      }
     }
   }
 
+  // A pairing filter of "X" should match a save where either side is "X" — and picking both
+  // A and B (e.g. Purge the Foe / Take and Hold) matches regardless of which side each was
+  // saved as, since "PTF vs T&H" and "T&H vs PTF" are the same matchup.
+  function matchesPairing(s, wantA, wantB) {
+    const a = dispName(s, 'A'), b = dispName(s, 'B');
+    if (wantA && wantB) return (a === wantA && b === wantB) || (a === wantB && b === wantA);
+    if (wantA) return a === wantA || b === wantA;
+    if (wantB) return a === wantB || b === wantB;
+    return true;
+  }
+
   function render() {
-    const pairing = document.getElementById('fPairing').value;
+    const wantA = document.getElementById('fDispA').value;
+    const wantB = document.getElementById('fDispB').value;
     const layout = document.getElementById('fLayout').value;
     const filtered = SAVES.filter(s =>
-      (!pairing || pairingKey(s) === pairing) &&
+      matchesPairing(s, wantA, wantB) &&
       (!layout || s.layoutLetter === layout)
     ).sort((a, b) => (b.savedAt || '').localeCompare(a.savedAt || ''));
 
@@ -77,7 +98,7 @@
       li.className = 'save-item';
       const when = s.savedAt ? new Date(s.savedAt).toLocaleString() : '';
       li.innerHTML = `<div class="save-title">${escapeHtml(s.title)}</div>
-        <div class="save-meta">${escapeHtml(s.dispAName)} vs ${escapeHtml(s.dispBName)} — Layout ${escapeHtml(s.layoutLetter)} — ${escapeHtml(when)}</div>`;
+        <div class="save-meta">${escapeHtml(dispName(s, 'A'))} vs ${escapeHtml(dispName(s, 'B'))} — Layout ${escapeHtml(s.layoutLetter || '?')} — ${escapeHtml(when)}</div>`;
       li.addEventListener('click', () => openViewer(s));
       list.appendChild(li);
     }
@@ -98,7 +119,8 @@
   document.getElementById('viewerClose').addEventListener('click', closeViewer);
   document.getElementById('viewer').addEventListener('click', e => { if (e.target.id === 'viewer') closeViewer(); });
 
-  document.getElementById('fPairing').addEventListener('change', render);
+  document.getElementById('fDispA').addEventListener('change', render);
+  document.getElementById('fDispB').addEventListener('change', render);
   document.getElementById('fLayout').addEventListener('change', render);
 
   fetch('index.json?_=' + Date.now())
