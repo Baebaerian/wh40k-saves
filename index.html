@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>WH40K Saves</title>
+<style>
+  :root { --bg:#0f0f0f; --panel:#1a1a1a; --text:#ddd8cc; --muted:#888; --accent:#c0a24b; --border:#333; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font-family:'Segoe UI',system-ui,sans-serif; }
+  header { padding:14px 16px 10px; border-bottom:1px solid var(--border); }
+  h1 { margin:0 0 10px; font-size:18px; }
+  .filters { display:flex; gap:8px; flex-wrap:wrap; }
+  select { background:var(--panel); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:8px 10px; font-size:14px; flex:1; min-width:120px; }
+  #status { padding:10px 16px; color:var(--muted); font-size:13px; }
+  #list { list-style:none; margin:0; padding:8px; display:flex; flex-direction:column; gap:8px; }
+  .save-item { background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:10px 12px; cursor:pointer; }
+  .save-item:active { border-color:var(--accent); }
+  .save-title { font-weight:600; font-size:15px; }
+  .save-meta { color:var(--muted); font-size:12px; margin-top:3px; }
+  #empty { padding:24px 16px; color:var(--muted); text-align:center; }
+  #viewer { position:fixed; inset:0; background:#000; display:none; align-items:center; justify-content:center; z-index:10; }
+  #viewer.open { display:flex; }
+  #viewer img { max-width:100%; max-height:100%; touch-action:pinch-zoom; }
+  #viewerClose { position:fixed; top:10px; right:12px; z-index:11; background:rgba(0,0,0,0.6); color:var(--text); border:1px solid var(--border); border-radius:50%; width:36px; height:36px; font-size:18px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>WH40K Board Saves</h1>
+  <div class="filters">
+    <select id="fPairing"><option value="">All disposition pairings</option></select>
+    <select id="fLayout"><option value="">All layouts</option></select>
+  </div>
+</header>
+<div id="status">Loading saves…</div>
+<div id="empty" style="display:none">No saves match this filter.</div>
+<ul id="list"></ul>
+
+<div id="viewer">
+  <button id="viewerClose">✕</button>
+  <img id="viewerImg" alt="Save snapshot">
+</div>
+
+<script>
+  let SAVES = [];
+
+  function pairingKey(s) { return s.dispAName + ' vs ' + s.dispBName; }
+
+  function populateFilters() {
+    const pairings = [...new Set(SAVES.map(pairingKey))].sort();
+    const layouts = [...new Set(SAVES.map(s => s.layoutLetter))].sort();
+    const fPairing = document.getElementById('fPairing');
+    const fLayout = document.getElementById('fLayout');
+    for (const p of pairings) {
+      const o = document.createElement('option'); o.value = p; o.textContent = p; fPairing.appendChild(o);
+    }
+    for (const l of layouts) {
+      const o = document.createElement('option'); o.value = l; o.textContent = 'Layout ' + l; fLayout.appendChild(o);
+    }
+  }
+
+  function render() {
+    const pairing = document.getElementById('fPairing').value;
+    const layout = document.getElementById('fLayout').value;
+    const filtered = SAVES.filter(s =>
+      (!pairing || pairingKey(s) === pairing) &&
+      (!layout || s.layoutLetter === layout)
+    ).sort((a, b) => (b.savedAt || '').localeCompare(a.savedAt || ''));
+
+    const list = document.getElementById('list');
+    list.innerHTML = '';
+    document.getElementById('empty').style.display = filtered.length ? 'none' : 'block';
+
+    for (const s of filtered) {
+      const li = document.createElement('li');
+      li.className = 'save-item';
+      const when = s.savedAt ? new Date(s.savedAt).toLocaleString() : '';
+      li.innerHTML = `<div class="save-title">${escapeHtml(s.title)}</div>
+        <div class="save-meta">${escapeHtml(s.dispAName)} vs ${escapeHtml(s.dispBName)} — Layout ${escapeHtml(s.layoutLetter)} — ${escapeHtml(when)}</div>`;
+      li.addEventListener('click', () => openViewer(s));
+      list.appendChild(li);
+    }
+  }
+
+  function escapeHtml(str) {
+    return String(str ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function openViewer(s) {
+    document.getElementById('viewerImg').src = 'saves/' + encodeURIComponent(s.pngFile);
+    document.getElementById('viewer').classList.add('open');
+  }
+  function closeViewer() {
+    document.getElementById('viewer').classList.remove('open');
+    document.getElementById('viewerImg').src = '';
+  }
+  document.getElementById('viewerClose').addEventListener('click', closeViewer);
+  document.getElementById('viewer').addEventListener('click', e => { if (e.target.id === 'viewer') closeViewer(); });
+
+  document.getElementById('fPairing').addEventListener('change', render);
+  document.getElementById('fLayout').addEventListener('change', render);
+
+  fetch('index.json?_=' + Date.now())
+    .then(r => r.json())
+    .then(data => {
+      SAVES = Array.isArray(data) ? data : [];
+      document.getElementById('status').textContent = SAVES.length
+        ? `${SAVES.length} save${SAVES.length === 1 ? '' : 's'} published.`
+        : 'No saves published yet.';
+      populateFilters();
+      render();
+    })
+    .catch(e => { document.getElementById('status').textContent = 'Could not load saves: ' + e.message; });
+</script>
+</body>
+</html>
