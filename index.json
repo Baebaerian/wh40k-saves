@@ -7,5 +7,16 @@
     "layoutLetter": "A",
     "pngFile": "test-layout-mr6shbxsb0dj.png",
     "savedAt": "2026-07-04T20:02:48.112Z"
+  },
+  {
+    "id": "mr70bgoy6mfn",
+    "title": "Test Layout V2",
+    "dispA": "take-and-hold",
+    "dispB": "purge-the-foe",
+    "dispAName": "Take and Hold",
+    "dispBName": "Purge the Foe",
+    "layoutLetter": "A",
+    "pngFile": "test-layout-v2-mr70bgoy6mfn.png",
+    "savedAt": "2026-07-04T23:42:11.266Z"
   }
 ]
