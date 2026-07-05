@@ -1,16 +1,5 @@
 [
   {
-    "id": "mr70bgoy6mfn",
-    "title": "Test Layout V2",
-    "dispA": "take-and-hold",
-    "dispB": "purge-the-foe",
-    "dispAName": "Take and Hold",
-    "dispBName": "Purge the Foe",
-    "layoutLetter": "A",
-    "pngFile": "test-layout-v2-mr70bgoy6mfn.png",
-    "savedAt": "2026-07-04T23:42:11.266Z"
-  },
-  {
     "id": "mr76gz97ckq4",
     "title": "Spread Push",
     "dispA": "take-and-hold",
