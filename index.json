@@ -20,5 +20,16 @@
     "layoutLetter": "C",
     "pngFile": "hard-counter-left-mrctlo2u3yz6.png",
     "savedAt": "2026-07-09T01:20:47.142Z"
+  },
+  {
+    "id": "mrgplch4st8p",
+    "title": "Coterie setup",
+    "dispA": "take-and-hold",
+    "dispB": "purge-the-foe",
+    "dispAName": "Take and Hold",
+    "dispBName": "Purge the Foe",
+    "layoutLetter": "B",
+    "pngFile": "coterie-setup-mrgplch4st8p.png",
+    "savedAt": "2026-07-11T18:39:38.344Z"
   }
 ]
